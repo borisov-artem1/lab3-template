@@ -2,9 +2,11 @@ import json
 from uuid import UUID
 import requests
 from requests import Response
+from fastapi import status
 
 from cruds.base import BaseCRUD
 from utils.settings import get_settings
+from utils.circuit_breaker import CircuitBreaker
 from schemas.rating import Rating, RatingUpdate, RatingCreate
 
 
@@ -22,11 +24,15 @@ class RatingCRUD(BaseCRUD):
       size: int = 100,
       username: str | None = None,
   ):
-    response: Response = requests.get(
+    response: Response = CircuitBreaker.send_request(
       url=f'{self.http_path}rating/?page={page}&size={size}'\
-        f'{f"&username={username}" if username else ""}'
+        f'{f"&username={username}" if username else ""}',
+      http_method=requests.get,
     )
-    self._check_status_code(response.status_code)
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Rating Service",
+    )
 
     rating_json: list[Rating] = response.json()
 
@@ -47,10 +53,14 @@ class RatingCRUD(BaseCRUD):
       self,
       id: int,
   ) -> Rating:
-    response: Response = requests.get(
+    response: Response = CircuitBreaker.send_request(
       url=f'{self.http_path}rating/{id}',
+      http_method=requests.get,
     )
-    self._check_status_code(response.status_code)
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Rating Service",
+    )
 
     rating_json = response.json()
 
@@ -65,11 +75,19 @@ class RatingCRUD(BaseCRUD):
       self,
       create: RatingCreate,
   ) -> int:
-    response: Response = requests.post(
-      url=f'{self.http_path}rating/',
-      data=json.dumps(create.model_dump())
+    try:
+      response: Response = requests.post(
+        url=f'{self.http_path}rating/',
+        data=json.dumps(create.model_dump())
+      )
+    except:
+      response = Response()
+      response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Rating Service",
     )
-    self._check_status_code(response.status_code)
 
     location: str = response.headers["location"]
     id = str(location.split("/")[-1])
@@ -82,11 +100,19 @@ class RatingCRUD(BaseCRUD):
       id: int,
       update: RatingUpdate,
   ):
-    response: Response = requests.patch(
-      url=f'{self.http_path}rating/{id}',
-      data=json.dumps(update.model_dump(exclude_unset=True))
+    try:
+      response: Response = requests.patch(
+        url=f'{self.http_path}rating/{id}',
+        data=json.dumps(update.model_dump(exclude_unset=True))
+      )
+    except:
+      response = Response()
+      response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Rating Service",
     )
-    self._check_status_code(response.status_code)
 
     rating = response.json()
     return rating["id"]

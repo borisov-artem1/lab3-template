@@ -2,9 +2,11 @@ import json
 from uuid import UUID
 import requests
 from requests import Response
+from fastapi import status
 
 from cruds.base import BaseCRUD
 from utils.settings import get_settings
+from utils.circuit_breaker import CircuitBreaker
 from schemas.reservation import Reservation, ReservationCreate, ReservationUpdate
 from enums.status import ReservationStatus
 
@@ -25,12 +27,16 @@ class ReservationCRUD(BaseCRUD):
       username: str | None = None,
       status: ReservationStatus | None = None,
   ):
-    response: Response = requests.get(
+    response: Response = CircuitBreaker.send_request(
       url=f'{self.http_path}reservation/?page={page}&size={size}'\
         f'{f"&username={username}" if username else ""}'\
-        f'{f"&status={status}" if status else ""}'
+        f'{f"&status={status}" if status else ""}',
+      http_method=requests.get,
     )
-    self._check_status_code(response.status_code)
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Reservation Service",
+    )
 
     reservation_json: list[Reservation] = response.json()
 
@@ -55,10 +61,14 @@ class ReservationCRUD(BaseCRUD):
       self,
       uid: UUID,
   ) -> Reservation:
-    response: Response = requests.get(
-      url=f'{self.http_path}reservation/{uid}'
+    response: Response = CircuitBreaker.send_request(
+      url=f'{self.http_path}reservation/{uid}',
+      http_method=requests.get,
     )
-    self._check_status_code(response.status_code)
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Reservation Service",
+    )
     
     reservation = response.json()
     
@@ -83,13 +93,19 @@ class ReservationCRUD(BaseCRUD):
     update.start_date = None if not update.start_date else update.start_date.strftime('%Y-%m-%d') # is not JSON serializable
     update.till_date = None if not update.till_date  else update.till_date.strftime('%Y-%m-%d') # is not JSON serializable
 
-    print(update)
+    try:
+      response: Response = requests.patch(
+        url=f'{self.http_path}reservation/{uid}',
+        data=json.dumps(update.model_dump(mode='json', exclude_unset=True, exclude_none=True))
+      )
+    except:
+      response = Response()
+      response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
-    response: Response = requests.patch(
-      url=f'{self.http_path}reservation/{uid}',
-      data=json.dumps(update.model_dump(mode='json', exclude_unset=True, exclude_none=True))
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Reservation Service",
     )
-    self._check_status_code(response.status_code)
 
     reservation = response.json()
     return reservation["id"]
@@ -104,13 +120,39 @@ class ReservationCRUD(BaseCRUD):
     create.start_date = create.start_date.strftime('%Y-%m-%d') # is not JSON serializable
     create.till_date = create.till_date.strftime('%Y-%m-%d') # is not JSON serializable
 
-    response: Response = requests.post(
-      url=f'{self.http_path}reservation/',
-      data=json.dumps(create.model_dump())
+    try:
+      response: Response = requests.post(
+        url=f'{self.http_path}reservation/',
+        data=json.dumps(create.model_dump())
+      )
+    except:
+      response = Response()
+      response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Reservation Service",
     )
-    self._check_status_code(response.status_code)
 
     location: str = response.headers["location"]
     uid = str(location.split("/")[-1])
 
     return uid
+  
+
+  async def delete_reservation(
+      self,
+      uid: UUID,
+  ):
+    try:
+      response: Response = requests.delete(
+        url=f'{self.http_path}reservations/{uid}/'
+      )
+    except:
+      response = Response()
+      response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+  
+    self._check_status_code(
+      status_code=response.status_code,
+      service_name="Reservation Service"
+    )

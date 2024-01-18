@@ -6,9 +6,9 @@ from enums.status import ConditionStatus
 
 # ======= Library =======
 class LibraryBase(BaseModel):
-  name: constr(max_length=80)
-  city: constr(max_length=255)
-  address: constr(max_length=255)
+  name: constr(max_length=80) | None
+  city: constr(max_length=255) | None
+  address: constr(max_length=255) | None
 
 
 class LibraryFilter(BaseModel):
@@ -23,7 +23,7 @@ class Library(LibraryBase):
 
 
 class LibraryResponse(LibraryBase):
-  libraryUid: UUID
+  libraryUid: UUID | None
 
 
 class LibraryPaginationResponse(BaseModel):
@@ -35,10 +35,10 @@ class LibraryPaginationResponse(BaseModel):
 
 # ======= Book =======
 class BookBase(BaseModel):
-  name: constr(max_length=255)
-  author: constr(max_length=255)
-  genre: constr(max_length=255)
-  condition: ConditionStatus
+  name: constr(max_length=255) | None
+  author: constr(max_length=255) | None
+  genre: constr(max_length=255) | None
+  condition: ConditionStatus | None
 
 
 class BookUpdate(BaseModel):
@@ -54,7 +54,7 @@ class Book(BookBase):
 
 
 class BookInfo(BookBase):
-  bookUid: UUID
+  bookUid: UUID | None
 
 
 class BookPaginationResponse(BaseModel):
