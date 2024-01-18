@@ -19,7 +19,7 @@ timed() {
   ds=$(("$dt3" - 60 * "$dm"))
 
   LC_NUMERIC=C printf "\nTotal runtime: %02d min %02d seconds\n" "$dm" "$ds"
-}
+} 
 
 success() {
   newman run \
