@@ -1,20 +1,84 @@
-version: "3"
-services:
-  postgres:
-    image: library/postgres:13
-    container_name: postgres
-    restart: on-failure
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "postgres"
-      POSTGRES_DB: postgres
-    volumes:
-      - db-data:/var/lib/postgresql/data
-      - ./postgres/:/docker-entrypoint-initdb.d/
-    ports:
-      - "5432:5432"
+version: '3.1'
 
-# TODO добавить сервисы
+services:
+  postgres_db_lab03:
+    image: postgres:16-alpine
+    container_name: postgres_db_lab03
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./pg_data_db:/var/lib/postgresql/data
+      # - ./src/library_service/sql/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./db_sql/:/docker-entrypoint-initdb.d/
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  library_service_lab03:
+    image: library_service_lab03
+    container_name: library_service_lab03
+    build:
+      context: "."
+      dockerfile: ./docker/library.Dockerfile
+    ports:
+      - "8060:8060"
+    networks:
+      - default
+    depends_on:
+      postgres_db_lab03:
+        condition: service_healthy
+
+  rating_service_lab03:
+    image: rating_service_lab03
+    container_name: rating_service_lab03
+    build:
+      context: "."
+      dockerfile: ./docker/rating.Dockerfile
+    ports:
+      - "8050:8050"
+    networks:
+      - default
+    depends_on:
+      postgres_db_lab03:
+        condition: service_healthy
+
+  reservation_service_lab03:
+    image: reservation_service_lab03
+    container_name: reservation_service_lab03
+    build:
+      context: "."
+      dockerfile: ./docker/reservation.Dockerfile
+    ports:
+      - "8070:8070"
+    networks:
+      - default
+    depends_on:
+      postgres_db_lab03:
+        condition: service_healthy
+
+  gateway_service_lab03:
+    image: gateway_service_lab03
+    container_name: gateway_service_lab03
+    build:
+      context: "."
+      dockerfile: ./docker/gateway.Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - default
+
 
 volumes:
-  db-data:
+  pg_data:
+    driver: local
+
+networks:
+  default:

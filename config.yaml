@@ -1,0 +1,44 @@
+databases:
+  library_db:
+    user: postgres
+    password: password
+    db: libraries
+    host: postgres_db_lab03
+    port: 5432
+  rating_db:
+    user: postgres
+    password: password
+    db: ratings
+    host: postgres_db_lab03
+    port: 5432
+  reservation_db:
+    user: postgres
+    password: password
+    db: reservations
+    host: postgres_db_lab03
+    port: 5432
+
+services:
+  library:
+    host: "0.0.0.0"
+    port: 8060
+    log_level: "info"
+    reload: True
+  rating:
+    host: "0.0.0.0"
+    port: 8050
+    log_level: "info"
+    reload: True
+  reservation:
+    host: "0.0.0.0"
+    port: 8070
+    log_level: "info"
+    reload: True
+  gateway:
+    host: "0.0.0.0"
+    port: 8080
+    log_level: "info"
+    reload: True
+    library_host: library_service_lab03
+    rating_host: rating_service_lab03
+    reservation_host: reservation_service_lab03

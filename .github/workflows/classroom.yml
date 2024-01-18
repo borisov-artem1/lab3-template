@@ -2,60 +2,89 @@ name: GitHub Classroom Workflow
 on:
   push:
     branches:
-      - master
+      - main
+      - dev
   pull_request:
     branches:
-      - master
+      - main
+      - dev
+
 jobs:
-  build:
-    name: Autograding
+  unit-tests:
+    name: Run unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: docker/setup-buildx-action@v2
+      - name: Set up python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install the necessary packages
+        run: pip3.10 install -r requirements.txt
 
-      # TODO build and run unit tests
+      - name: Run unit tests for Rating service
+        run: pytest -vs src/rating_service/app/unit_tests/rating.py
 
-      - name: Build images
-        timeout-minutes: 10
-        run: docker compose build
+      - name: Run unit tests for Reservation service
+        run: pytest -vs src/reservation_service/app/unit_tests/reservation.py -W ignore::DeprecationWarning
 
-      - name: Run containers
-        timeout-minutes: 5
-        run: |
-          docker compose up -d
-          ./scripts/wait-script.sh
+  deploy:
+    name: Deploy service on VM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Copy code to VM
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "v4,scripts,Makefile,src,docker,db_sql,docker-compose.yml,config.yaml,requirements.txt"
+          target: /home/${{ secrets.SSH_USERNAME }}/library_system_lab03
+
+      - name: Run app on VM
+        uses: appleboy/ssh-action@v1.0.0
         env:
           WAIT_PORTS: 8080,8070,8060,8050
-
-      # TODO setup variant, service and port
-
-      - name: Run API Tests
-        timeout-minutes: 5
-        run: ./scripts/test-script.sh
-        env:
-          VARIANT: <variant>
-          SERVICE_NAME: <your service name>
-          PORT_NUMBER: <port number>
-
-      - uses: education/autograding@v1
-        id: autograder
-        continue-on-error: true
-
-      - name: Github auto grader mark
-        uses: Romanow/google-sheet-autograder-marker@v1.0
         with:
-          google_token: ${{secrets.GOOGLE_API_KEY}}
-          sheet_id: "1xkgjUX6Qmk7rdJG-QPOToav-HWWtthJjnShIKnw3oIY"
-          homework_number: 3
-          user_column: 'D'
-          column_offset: 'F'
-          mark: "'+"
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.SSH_USERNAME }}/library_system_lab03
+            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker compose down
+            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker rmi gateway_service
+            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker rmi library_service
+            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker rmi reservation_service
+            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker rmi rating_service
+            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker compose up -d
+            echo ${{ secrets.SSH_PASSWORD }} | sudo ./scripts/wait-script.sh
 
-      - name: Stop containers
-        if: always()
-        continue-on-error: true
-        run: docker compose down -v
+  autograding:
+    name: Autograding
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: appleboy/ssh-action@v1.0.0
+        timeout-minutes: 10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/${{ secrets.SSH_USERNAME }}/library_system_lab03
+            echo ${{ secrets.SSH_PASSWORD }} | sudo ./scripts/test-script.sh v4 rating_service_lab03 8050
