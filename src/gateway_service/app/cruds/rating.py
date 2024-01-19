@@ -8,6 +8,7 @@ from cruds.base import BaseCRUD
 from utils.settings import get_settings
 from utils.circuit_breaker import CircuitBreaker
 from schemas.rating import Rating, RatingUpdate, RatingCreate
+from exceptions.http import ServiceUnavailableException
 
 
 class RatingCRUD(BaseCRUD):
@@ -24,11 +25,16 @@ class RatingCRUD(BaseCRUD):
       size: int = 100,
       username: str | None = None,
   ):
-    response: Response = CircuitBreaker.send_request(
-      url=f'{self.http_path}rating/?page={page}&size={size}'\
-        f'{f"&username={username}" if username else ""}',
-      http_method=requests.get,
-    )
+    try:
+      response: Response = CircuitBreaker.send_request(
+        url=f'{self.http_path}rating/?page={page}&size={size}'\
+          f'{f"&username={username}" if username else ""}',
+        http_method=requests.get,
+      )
+    except:
+      raise ServiceUnavailableException(
+        message="Сервис не доступен",
+      )
     self._check_status_code(
       status_code=response.status_code,
       service_name="Rating Service",
@@ -53,10 +59,15 @@ class RatingCRUD(BaseCRUD):
       self,
       id: int,
   ) -> Rating:
-    response: Response = CircuitBreaker.send_request(
-      url=f'{self.http_path}rating/{id}',
-      http_method=requests.get,
-    )
+    try:
+      response: Response = CircuitBreaker.send_request(
+        url=f'{self.http_path}rating/{id}',
+        http_method=requests.get,
+      )
+    except:
+      raise ServiceUnavailableException(
+        message="Сервис не доступен",
+      )
     self._check_status_code(
       status_code=response.status_code,
       service_name="Rating Service",
