@@ -11,7 +11,7 @@ class BaseCRUD():
     
     if status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
       raise ServiceUnavailableException(
-        prefix=method
+        message=f"{service_name} unavailable"
       )
     elif status_code >= 400:
       raise InvalidRequestException(

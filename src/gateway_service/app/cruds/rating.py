@@ -25,16 +25,11 @@ class RatingCRUD(BaseCRUD):
       size: int = 100,
       username: str | None = None,
   ):
-    try:
-      response: Response = CircuitBreaker.send_request(
-        url=f'{self.http_path}rating/?page={page}&size={size}'\
-          f'{f"&username={username}" if username else ""}',
-        http_method=requests.get,
-      )
-    except:
-      raise ServiceUnavailableException(
-        message="Сервис не доступен",
-      )
+    response: Response = CircuitBreaker.send_request(
+      url=f'{self.http_path}rating/?page={page}&size={size}'\
+        f'{f"&username={username}" if username else ""}',
+      http_method=requests.get,
+    )
     self._check_status_code(
       status_code=response.status_code,
       service_name="Rating Service",
@@ -59,15 +54,10 @@ class RatingCRUD(BaseCRUD):
       self,
       id: int,
   ) -> Rating:
-    try:
-      response: Response = CircuitBreaker.send_request(
-        url=f'{self.http_path}rating/{id}',
-        http_method=requests.get,
-      )
-    except:
-      raise ServiceUnavailableException(
-        message="Сервис не доступен",
-      )
+    response: Response = CircuitBreaker.send_request(
+      url=f'{self.http_path}rating/{id}',
+      http_method=requests.get,
+    )
     self._check_status_code(
       status_code=response.status_code,
       service_name="Rating Service",
