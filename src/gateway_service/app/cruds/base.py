@@ -9,10 +9,9 @@ class BaseCRUD():
     method = inspect.stack()[1][3]
     method = " ".join(method.split('_')).title()
     
-    if status_code == status.HTTP_503_SERVICE_UNAVAILABLE \
-        or status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+    if status_code == status.HTTP_503_SERVICE_UNAVAILABLE:
       raise ServiceUnavailableException(
-        message=f"{service_name} unavailable"
+        prefix=method
       )
     elif status_code >= 400:
       raise InvalidRequestException(
