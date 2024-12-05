@@ -60,14 +60,14 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd /home/${{ secrets.SSH_USERNAME }}/library_system_lab03
-            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker compose down
-            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker rmi gateway_service_lab03
-            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker rmi library_service_lab03
-            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker rmi reservation_service_lab03
-            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker rmi rating_service_lab03
-            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker compose up -d
-            echo ${{ secrets.SSH_PASSWORD }} | sudo ./scripts/wait-script.sh
+             cd /home/${{ secrets.SSH_USERNAME }}/library_system_lab03
+             sudo -S docker compose down
+             sudo -S docker rmi gateway_service_lab03
+             sudo -S docker rmi library_service_lab03
+             sudo -S docker rmi reservation_service_lab03
+             sudo -S docker rmi rating_service_lab03
+             sudo -S docker compose up -d
+             sudo ./scripts/wait-script.sh
 
   autograding:
     name: Autograding
