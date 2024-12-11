@@ -38,7 +38,7 @@ step() {
 
   docker compose "$operation" "$service"
   if [[ "$operation" == "start" ]]; then
-    "$path"/wait-for.sh -t 120 "http://localhost:$port/api/v1/manage/health" -- echo "Host localhost:$port is active"
+    "$path"/wait-for.sh -t 120 "http://84.252.133.253:$port/api/v1/manage/health" -- echo "Host localhost:$port is active"
     sleep 10
   fi
 
