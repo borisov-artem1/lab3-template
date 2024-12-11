@@ -87,4 +87,4 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd /home/${{ secrets.SSH_USERNAME }}/library_system_lab03
-            sudo ./scripts/test-script.sh v4 rating_service_lab03 8050
+            sudo ../scripts/test-script.sh v4 rating_service_lab03 8050
