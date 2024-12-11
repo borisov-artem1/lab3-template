@@ -61,12 +61,12 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
              cd /home/${{ secrets.SSH_USERNAME }}/library_system_lab03
-             sudo -S docker compose down
+             sudo -S docker-compose down
              sudo -S docker rmi gateway_service_lab03
              sudo -S docker rmi library_service_lab03
              sudo -S docker rmi reservation_service_lab03
              sudo -S docker rmi rating_service_lab03
-             sudo -S docker compose up -d
+             sudo -S docker-compose up -d
              sudo ./scripts/wait-script.sh
 
   autograding:
@@ -87,4 +87,4 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd /home/${{ secrets.SSH_USERNAME }}/library_system_lab03
-            echo ${{ secrets.SSH_PASSWORD }} | sudo ./scripts/test-script.sh v4 rating_service_lab03 8050
+            sudo ./scripts/test-script.sh v4 rating_service_lab03 8050
